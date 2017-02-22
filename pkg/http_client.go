@@ -15,12 +15,10 @@
 package pkg
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	neturl "net/url"
 	"strings"
@@ -55,18 +53,17 @@ type ErrNetwork struct {
 }
 
 type HttpClient struct {
+	// Initial backoff duration. Defaults to 50 milliseconds
+	InitialBackoff time.Duration
+
 	// Maximum exp backoff duration. Defaults to 5 seconds
 	MaxBackoff time.Duration
 
 	// Maximum number of connection retries. Defaults to 15
 	MaxRetries int
 
-	// HTTP client timeout, this is suggested to be low since exponential
-	// backoff will kick off too. Defaults to 2 seconds
-	Timeout time.Duration
-
-	// Whether or not to skip TLS verification. Defaults to false
-	SkipTLS bool
+	// Headers to add to the request.
+	Header http.Header
 
 	client *http.Client
 }
@@ -77,30 +74,17 @@ type Getter interface {
 }
 
 func NewHttpClient() *HttpClient {
-	hc := &HttpClient{
-		MaxBackoff: time.Second * 5,
-		MaxRetries: 15,
-		Timeout:    time.Duration(2) * time.Second,
-		SkipTLS:    false,
-	}
+	return NewHttpClientHeader(nil)
+}
 
-	// We need to create our own client in order to add timeout support.
-	// TODO(c4milo) Replace it once Go 1.3 is officially used by CoreOS
-	// More info: https://code.google.com/p/go/source/detail?r=ada6f2d5f99f
-	hc.client = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: hc.SkipTLS,
-			},
-			Dial: func(network, addr string) (net.Conn, error) {
-				deadline := time.Now().Add(hc.Timeout)
-				c, err := net.DialTimeout(network, addr, hc.Timeout)
-				if err != nil {
-					return nil, err
-				}
-				c.SetDeadline(deadline)
-				return c, nil
-			},
+func NewHttpClientHeader(header http.Header) *HttpClient {
+	hc := &HttpClient{
+		InitialBackoff: 50 * time.Millisecond,
+		MaxBackoff:     time.Second * 5,
+		MaxRetries:     15,
+		Header:         header,
+		client: &http.Client{
+			Timeout: 10 * time.Second,
 		},
 	}
 
@@ -134,7 +118,7 @@ func (h *HttpClient) GetRetry(rawurl string) ([]byte, error) {
 
 	dataURL := url.String()
 
-	duration := 50 * time.Millisecond
+	duration := h.InitialBackoff
 	for retry := 1; retry <= h.MaxRetries; retry++ {
 		log.Printf("Fetching data from %s. Attempt #%d", dataURL, retry)
 
@@ -159,7 +143,13 @@ func (h *HttpClient) GetRetry(rawurl string) ([]byte, error) {
 }
 
 func (h *HttpClient) Get(dataURL string) ([]byte, error) {
-	if resp, err := h.client.Get(dataURL); err == nil {
+	request, err := http.NewRequest("GET", dataURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header = h.Header
+	if resp, err := h.client.Do(request); err == nil {
 		defer resp.Body.Close()
 		switch resp.StatusCode / 100 {
 		case HTTP_2xx:

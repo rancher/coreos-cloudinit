@@ -135,6 +135,7 @@ func Apply(cfg config.CloudConfig, ifaces []network.InterfaceGenerator, env *Env
 
 	for _, ccu := range []CloudConfigUnit{
 		system.Etcd{Etcd: cfg.CoreOS.Etcd},
+		system.Etcd2{Etcd2: cfg.CoreOS.Etcd2},
 		system.Fleet{Fleet: cfg.CoreOS.Fleet},
 		system.Locksmith{Locksmith: cfg.CoreOS.Locksmith},
 		system.Update{Update: cfg.CoreOS.Update, ReadConfig: system.DefaultReadConfig},
@@ -281,7 +282,7 @@ func processUnits(units []system.Unit, root string, um system.UnitManager) error
 	}
 
 	for _, action := range actions {
-		log.Printf("Calling unit command %q on %q'", action.command, action.unit.Name)
+		log.Printf("Calling unit command %q on %q", action.command, action.unit.Name)
 		res, err := um.RunUnitCommand(action.unit, action.command)
 		if err != nil {
 			return err

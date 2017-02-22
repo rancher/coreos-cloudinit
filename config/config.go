@@ -19,8 +19,9 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"unicode"
 
-	"github.com/coreos/coreos-cloudinit/Godeps/_workspace/src/github.com/coreos/yaml"
+	"github.com/coreos/yaml"
 )
 
 // CloudConfig encapsulates the entire cloud-config configuration file and maps
@@ -37,6 +38,7 @@ type CloudConfig struct {
 
 type CoreOS struct {
 	Etcd      Etcd      `yaml:"etcd"`
+	Etcd2     Etcd2     `yaml:"etcd2"`
 	Flannel   Flannel   `yaml:"flannel"`
 	Fleet     Fleet     `yaml:"fleet"`
 	Locksmith Locksmith `yaml:"locksmith"`
@@ -48,10 +50,8 @@ type CoreOS struct {
 func IsCloudConfig(userdata string) bool {
 	header := strings.SplitN(userdata, "\n", 2)[0]
 
-	// Explicitly trim the header so we can handle user-data from
-	// non-unix operating systems. The rest of the file is parsed
-	// by yaml, which correctly handles CRLF.
-	header = strings.TrimSuffix(header, "\r")
+	// Trim trailing whitespaces
+	header = strings.TrimRightFunc(header, unicode.IsSpace)
 
 	return (header == "#cloud-config")
 }
@@ -68,6 +68,22 @@ func NewCloudConfig(contents string) (*CloudConfig, error) {
 	return &cfg, err
 }
 
+// Decode decodes the content of cloud config. Currently only WriteFiles section
+// supports several types of encoding and all of them are supported. After
+// decode operation, Encoding type is unset.
+func (cc *CloudConfig) Decode() error {
+	for i, file := range cc.WriteFiles {
+		content, err := DecodeContent(file.Content, file.Encoding)
+		if err != nil {
+			return err
+		}
+
+		cc.WriteFiles[i].Content = string(content)
+		cc.WriteFiles[i].Encoding = ""
+	}
+
+	return nil
+}
 func (cc CloudConfig) String() string {
 	bytes, err := yaml.Marshal(cc)
 	if err != nil {

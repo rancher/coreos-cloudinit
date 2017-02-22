@@ -15,7 +15,6 @@
 package system
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os/exec"
@@ -24,7 +23,7 @@ import (
 	"github.com/coreos/coreos-cloudinit/config"
 	"github.com/coreos/coreos-cloudinit/network"
 
-	"github.com/coreos/coreos-cloudinit/Godeps/_workspace/src/github.com/dotcloud/docker/pkg/netlink"
+	"github.com/dotcloud/docker/pkg/netlink"
 )
 
 func RestartNetwork(interfaces []network.InterfaceGenerator) (err error) {
@@ -59,7 +58,7 @@ func downNetworkInterfaces(interfaces []network.InterfaceGenerator) error {
 		if systemInterface, ok := sysInterfaceMap[iface.Name()]; ok {
 			log.Printf("Taking down interface %q\n", systemInterface.Name)
 			if err := netlink.NetworkLinkDown(systemInterface); err != nil {
-				fmt.Printf("Error while downing interface %q (%s). Continuing...\n", systemInterface.Name, err)
+				log.Printf("Error while downing interface %q (%s). Continuing...\n", systemInterface.Name, err)
 			}
 		}
 	}

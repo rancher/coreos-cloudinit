@@ -21,6 +21,10 @@ import (
 	"github.com/coreos/coreos-cloudinit/config"
 )
 
+var (
+	ErrIgnitionConfig = errors.New("not a config (found Ignition)")
+)
+
 func ParseUserData(contents string) (interface{}, error) {
 	if len(contents) == 0 {
 		return nil, nil
@@ -32,7 +36,18 @@ func ParseUserData(contents string) (interface{}, error) {
 		return config.NewScript(contents)
 	case config.IsCloudConfig(contents):
 		log.Printf("Parsing user-data as cloud-config")
-		return config.NewCloudConfig(contents)
+		cc, err := config.NewCloudConfig(contents)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := cc.Decode(); err != nil {
+			return nil, err
+		}
+
+		return cc, nil
+	case config.IsIgnitionConfig(contents):
+		return nil, ErrIgnitionConfig
 	default:
 		return nil, errors.New("Unrecognized user-data format")
 	}

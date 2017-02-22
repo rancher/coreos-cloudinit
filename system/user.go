@@ -72,6 +72,10 @@ func CreateUser(u *config.User) error {
 		args = append(args, "--no-log-init")
 	}
 
+	if u.Shell != "" {
+		args = append(args, "--shell", u.Shell)
+	}
+
 	args = append(args, u.Name)
 
 	output, err := exec.Command("useradd", args...).CombinedOutput()
@@ -91,7 +95,7 @@ func SetUserPassword(user, hash string) error {
 
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	arg := fmt.Sprintf("%s:%s", user, hash)

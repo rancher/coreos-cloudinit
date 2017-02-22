@@ -1,3 +1,7 @@
+**NOTE**: This project has been superseded by [Ignition][ignition] and is no longer under active development. Please direct all development efforts to Ignition.
+
+[ignition]: https://github.com/coreos/ignition
+
 # coreos-cloudinit [![Build Status](https://travis-ci.org/coreos/coreos-cloudinit.png?branch=master)](https://travis-ci.org/coreos/coreos-cloudinit)
 
 coreos-cloudinit enables a user to customize CoreOS machines by providing either a cloud-config document or an executable script through user-data.
@@ -77,3 +81,10 @@ coreos:
         addr: 203.0.113.29:4001
         peer-addr: 192.0.2.13:7001
 ```
+
+## Bugs
+
+Please use the [CoreOS issue tracker][bugs] to report all bugs, issues, and feature requests.
+
+[bugs]: https://github.com/coreos/bugs/issues/new?labels=component/cloud-init
+

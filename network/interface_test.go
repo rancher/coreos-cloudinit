@@ -52,7 +52,7 @@ func TestInterfaceGenerators(t *testing.T) {
 		},
 		{
 			name:    "testname",
-			netdev:  "[NetDev]\nKind=bond\nName=testname\n",
+			netdev:  "[NetDev]\nKind=bond\nName=testname\n\n[Bond]\n",
 			network: "[Match]\nName=testname\n\n[Network]\nBond=testbond1\nVLAN=testvlan1\nVLAN=testvlan2\nDHCP=true\n",
 			kind:    "bond",
 			iface: &bondInterface{logicalInterface: logicalInterface{
@@ -89,14 +89,15 @@ func TestInterfaceGenerators(t *testing.T) {
 		{
 			name:    "testname",
 			netdev:  "[NetDev]\nKind=vlan\nName=testname\n\n[VLAN]\nId=0\n",
-			network: "[Match]\nName=testname\n\n[Network]\nDNS=8.8.8.8\n\n[Address]\nAddress=192.168.1.100/24\n\n[Route]\nDestination=0.0.0.0/0\nGateway=1.2.3.4\n",
+			network: "[Match]\nName=testname\n\n[Network]\nDomains=coreos.com example.com\nDNS=8.8.8.8\n\n[Address]\nAddress=192.168.1.100/24\n\n[Route]\nDestination=0.0.0.0/0\nGateway=1.2.3.4\n",
 			kind:    "vlan",
 			iface: &vlanInterface{logicalInterface: logicalInterface{
 				name: "testname",
 				config: configMethodStatic{
 					addresses:   []net.IPNet{{IP: []byte{192, 168, 1, 100}, Mask: []byte{255, 255, 255, 0}}},
 					nameservers: []net.IP{[]byte{8, 8, 8, 8}},
-					routes:      []route{route{destination: net.IPNet{IP: []byte{0, 0, 0, 0}, Mask: []byte{0, 0, 0, 0}}, gateway: []byte{1, 2, 3, 4}}},
+					domains:     []string{"coreos.com", "example.com"},
+					routes:      []route{{destination: net.IPNet{IP: []byte{0, 0, 0, 0}, Mask: []byte{0, 0, 0, 0}}, gateway: []byte{1, 2, 3, 4}}},
 				},
 			}},
 		},
@@ -152,7 +153,7 @@ func TestModprobeParams(t *testing.T) {
 
 func TestBuildInterfacesLo(t *testing.T) {
 	stanzas := []*stanzaInterface{
-		&stanzaInterface{
+		{
 			name:         "lo",
 			kind:         interfacePhysical,
 			auto:         false,
@@ -174,7 +175,7 @@ func TestBuildInterfacesBlindBond(t *testing.T) {
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"bond-slaves": []string{"eth0"},
+				"bond-slaves": {"eth0"},
 			},
 		},
 	}
@@ -211,8 +212,8 @@ func TestBuildInterfacesBlindVLAN(t *testing.T) {
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"id":         []string{"0"},
-				"raw_device": []string{"eth0"},
+				"id":         {"0"},
+				"raw_device": {"eth0"},
 			},
 		},
 	}
@@ -243,51 +244,51 @@ func TestBuildInterfacesBlindVLAN(t *testing.T) {
 
 func TestBuildInterfaces(t *testing.T) {
 	stanzas := []*stanzaInterface{
-		&stanzaInterface{
+		{
 			name:         "eth0",
 			kind:         interfacePhysical,
 			auto:         false,
 			configMethod: configMethodManual{},
 			options:      map[string][]string{},
 		},
-		&stanzaInterface{
+		{
 			name:         "bond0",
 			kind:         interfaceBond,
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"bond-slaves": []string{"eth0"},
-				"bond-mode":   []string{"4"},
-				"bond-miimon": []string{"100"},
+				"bond-slaves": {"eth0"},
+				"bond-mode":   {"4"},
+				"bond-miimon": {"100"},
 			},
 		},
-		&stanzaInterface{
+		{
 			name:         "bond1",
 			kind:         interfaceBond,
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"bond-slaves": []string{"bond0"},
+				"bond-slaves": {"bond0"},
 			},
 		},
-		&stanzaInterface{
+		{
 			name:         "vlan0",
 			kind:         interfaceVLAN,
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"id":         []string{"0"},
-				"raw_device": []string{"eth0"},
+				"id":         {"0"},
+				"raw_device": {"eth0"},
 			},
 		},
-		&stanzaInterface{
+		{
 			name:         "vlan1",
 			kind:         interfaceVLAN,
 			auto:         false,
 			configMethod: configMethodManual{},
 			options: map[string][]string{
-				"id":         []string{"1"},
-				"raw_device": []string{"bond0"},
+				"id":         {"1"},
+				"raw_device": {"bond0"},
 			},
 		},
 	}

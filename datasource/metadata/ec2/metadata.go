@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 
@@ -38,7 +39,7 @@ type metadataService struct {
 }
 
 func NewDatasource(root string) *metadataService {
-	return &metadataService{metadata.NewDatasource(root, apiVersion, userdataPath, metadataPath)}
+	return &metadataService{metadata.NewDatasource(root, apiVersion, userdataPath, metadataPath, nil)}
 }
 
 func (ms metadataService) FetchMetadata() (datasource.Metadata, error) {
@@ -61,7 +62,7 @@ func (ms metadataService) FetchMetadata() (datasource.Metadata, error) {
 				return metadata, err
 			}
 			metadata.SSHPublicKeys[name] = sshkey
-			fmt.Printf("Found SSH key for %q\n", name)
+			log.Printf("Found SSH key for %q\n", name)
 		}
 	} else if _, ok := err.(pkg.ErrNotFound); !ok {
 		return metadata, err
